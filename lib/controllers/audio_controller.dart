@@ -26,8 +26,10 @@ class AudioController extends GetxController {
     loggerDebug(audios.length, 'number of audio');
   }
 
-  checkAndReqPermission() async {
-    hasPermission(await _audioQuery.checkAndRequest());
+  checkAndReqPermission({bool retry = false}) async {
+    hasPermission(await _audioQuery.checkAndRequest(
+      retryRequest: retry,
+    ));
     if (hasPermission.value) {
       getSongs();
     } else {
