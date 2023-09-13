@@ -12,7 +12,6 @@ class PlayerPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    int sVal = 0;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Now Playing'),
@@ -71,19 +70,24 @@ class PlayerPage extends StatelessWidget {
               AudioController.to.nowPlaying.value?.artist ?? 'Artist',
             ),
           ),
-          Slider(
-            value: sVal.toDouble(),
-            onChanged: (val) {
-              sVal = val.round();
-            },
+          Obx(
+            () => Slider(
+              min: 0.0,
+              max: AudioController.to.max.value,
+              value: AudioController.to.current.value,
+              onChanged: (val) {
+                AudioController.to.changeDurationToSeconds(val.toInt());
+                val = val;
+              },
+            ),
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24.0),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('0.00'),
-                Text('3.15'),
+                Obx(() => Text(AudioController.to.position.value)),
+                Obx(() => Text(AudioController.to.duration.value)),
               ],
             ),
           ),
