@@ -2,6 +2,9 @@ import 'package:audio_player/views/pages/audio_list_page/audio_list_screen.dart'
 import 'package:audio_player/views/shared_widgets/cusotm_circular_button.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:on_audio_query/on_audio_query.dart';
+
+import '../../../controllers/audio_controller.dart';
 
 class PlayerPage extends StatelessWidget {
   const PlayerPage({super.key});
@@ -25,16 +28,48 @@ class PlayerPage extends StatelessWidget {
         // mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            height: Get.height * .5,
-            width: Get.width,
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
+          Obx(
+            () => Container(
+              height: Get.height * .5,
+              width: Get.width,
+              margin: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
                 color: Theme.of(context).primaryColor,
-                borderRadius: BorderRadius.circular(10)),
+                borderRadius: BorderRadius.circular(50),
+              ),
+              alignment: Alignment.center,
+              child: AudioController.to.nowPlaying.value != null
+                  ? QueryArtworkWidget(
+                      id: AudioController.to.nowPlaying.value!.id,
+                      type: ArtworkType.AUDIO,
+                      artworkHeight: double.infinity,
+                      artworkWidth: double.infinity,
+                    )
+                  : null,
+            ),
           ),
           const SizedBox(
-            height: 10,
+            height: 4,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Obx(
+              () => Text(
+                AudioController.to.nowPlaying.value?.displayNameWOExt ??
+                    'Music',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+          Obx(
+            () => Text(
+              AudioController.to.nowPlaying.value?.artist ?? 'Artist',
+            ),
           ),
           Slider(
             value: sVal.toDouble(),
@@ -67,16 +102,26 @@ class PlayerPage extends StatelessWidget {
               ),
               CustomCircularButton(
                 icon: Icons.skip_previous_outlined,
-                onPressed: () {},
+                onPressed: () {
+                  AudioController.to.playPrevious();
+                },
               ),
-              CustomCircularButton(
-                icon: Icons.play_arrow_outlined,
-                iconSize: 40,
-                onPressed: () {},
+              Obx(
+                () => CustomCircularButton(
+                  icon: AudioController.to.isPlaying.value
+                      ? Icons.pause_outlined
+                      : Icons.play_arrow_outlined,
+                  iconSize: 40,
+                  onPressed: () {
+                    AudioController.to.playAndPause();
+                  },
+                ),
               ),
               CustomCircularButton(
                 icon: Icons.skip_next_outlined,
-                onPressed: () {},
+                onPressed: () {
+                  AudioController.to.playNext();
+                },
               ),
               IconButton(
                 onPressed: () {},
