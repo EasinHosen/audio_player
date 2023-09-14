@@ -68,7 +68,8 @@ class AudioController extends GetxController {
       ignoreCase: true,
       uriType: UriType.EXTERNAL,
     );
-    songList.value = audioList;
+    final filteredList = filterAudioList(audioList);
+    songList.value = filteredList;
     songListLoading(false);
     if (songList.isNotEmpty) {
       ///manual method
@@ -80,6 +81,19 @@ class AudioController extends GetxController {
       ///auto method
       readyPlayer();
     }
+  }
+
+  List<SongModel> filterAudioList(List<SongModel> audioList) {
+    // Define your filter criteria here.
+    const minDurationInSeconds = 60; // Minimum duration in seconds
+    const minFileSizeInBytes = 2 * 1024 * 1024; // Minimum file size in bytes
+
+    return audioList.where((audio) {
+      // Check if the audio file meets your filter criteria.
+      final durationInSeconds = audio.duration! ~/ 1000; // Convert to seconds
+      return durationInSeconds >= minDurationInSeconds &&
+          audio.size >= minFileSizeInBytes;
+    }).toList();
   }
 
   playSelectedSong(int index) {
