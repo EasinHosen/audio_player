@@ -39,33 +39,45 @@ class AudioListPage extends StatelessWidget {
                 itemCount: AudioController.to.songList.length,
                 itemBuilder: (context, index) {
                   final audio = AudioController.to.songList[index];
-                  return ListTile(
-                    leading: QueryArtworkWidget(
-                      // controller: _audioQuery,
-                      id: audio.id,
-                      type: ArtworkType.AUDIO,
-                      nullArtworkWidget: Container(
-                          height: 50,
-                          width: 50,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(50),
-                            color: Colors.grey.withOpacity(0.2),
-                          ),
-                          child: const Icon(
-                            Icons.music_note,
-                          )),
+                  return Obx(
+                    () => ListTile(
+                      leading: QueryArtworkWidget(
+                        // controller: _audioQuery,
+                        id: audio.id,
+                        type: ArtworkType.AUDIO,
+                        nullArtworkWidget: Container(
+                            height: 50,
+                            width: 50,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(50),
+                              color: Colors.grey.withOpacity(0.2),
+                            ),
+                            child: const Icon(
+                              Icons.music_note,
+                            )),
+                      ),
+                      title: Text(
+                        audio.displayNameWOExt,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: AudioController.to.currentIndex.value == index
+                          ? IconButton(
+                              icon: AudioController.to.isPlaying.value
+                                  ? const Icon(Icons.pause_outlined)
+                                  : const Icon(Icons.play_arrow_outlined),
+                              onPressed: () {
+                                AudioController.to.playAndPause();
+                              },
+                            )
+                          : null,
+                      onTap: () {
+                        loggerDebug(audio, 'song model');
+                        loggerDebug(index, 'index');
+                        AudioController.to.currentIndex.value = index;
+                        AudioController.to.playSelectedSong(audio.uri);
+                      },
                     ),
-                    title: Text(
-                      audio.displayNameWOExt,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    onTap: () {
-                      loggerDebug(audio, 'song model');
-                      // AudioController.to.player.value.play();
-                      AudioController.to.nowPlaying.value = audio;
-                      AudioController.to.playSelectedSong(audio.uri);
-                    },
                   );
                 },
               ),
