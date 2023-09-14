@@ -9,6 +9,7 @@ class AudioController extends GetxController {
   RxList<SongModel> songList = <SongModel>[].obs;
   // RxList<AudioSource> audioSourceList = <AudioSource>[].obs;
   Rx<SongModel?> nowPlaying = Rx<SongModel?>(null);
+  Rx<LoopMode> loopMode = LoopMode.off.obs;
   RxBool hasPermission = false.obs;
   RxBool songListLoading = false.obs;
   RxBool isPlaying = false.obs;
@@ -212,5 +213,21 @@ class AudioController extends GetxController {
   void shuffle() async {
     isShuffleOn.value = !isShuffleOn.value;
     await _audioPlayer.setShuffleModeEnabled(isShuffleOn.value);
+  }
+
+  void toggleLoopMode() async {
+    switch (loopMode.value) {
+      case LoopMode.off:
+        loopMode.value = LoopMode.all;
+        break;
+      case LoopMode.all:
+        loopMode.value = LoopMode.one;
+        break;
+      case LoopMode.one:
+        loopMode.value = LoopMode.off;
+        break;
+    }
+
+    await _audioPlayer.setLoopMode(loopMode.value);
   }
 }

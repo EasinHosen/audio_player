@@ -3,6 +3,7 @@ import 'package:audio_player/views/pages/audio_list_page/audio_list_screen.dart'
 import 'package:audio_player/views/shared_widgets/cusotm_circular_button.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 
 import '../../../controllers/audio_controller.dart';
@@ -142,10 +143,19 @@ class PlayerPage extends StatelessWidget {
                 },
               ),
               IconButton(
-                onPressed: () {},
-                icon: const Icon(
-                  Icons.repeat_rounded,
-                  size: 20,
+                onPressed: () {
+                  AudioController.to.toggleLoopMode();
+                },
+                icon: Obx(
+                  () => Icon(
+                    AudioController.to.loopMode.value == LoopMode.one
+                        ? Icons.repeat_one_outlined
+                        : Icons.repeat_outlined,
+                    size: 20,
+                    color: AudioController.to.loopMode.value == LoopMode.off
+                        ? null
+                        : Theme.of(context).primaryColor,
+                  ),
                 ),
               ),
             ],
