@@ -75,7 +75,7 @@ class AudioListPage extends StatelessWidget {
                         loggerDebug(audio, 'song model');
                         loggerDebug(index, 'index');
                         AudioController.to.currentIndex.value = index;
-                        AudioController.to.playSelectedSong(audio.uri);
+                        AudioController.to.playSelectedSong(index);
                       },
                     ),
                   );

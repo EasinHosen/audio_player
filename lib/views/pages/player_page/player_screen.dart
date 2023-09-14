@@ -1,3 +1,4 @@
+import 'package:audio_player/utils/global_helpers.dart';
 import 'package:audio_player/views/pages/audio_list_page/audio_list_screen.dart';
 import 'package:audio_player/views/shared_widgets/cusotm_circular_button.dart';
 import 'package:flutter/material.dart';
@@ -102,10 +103,19 @@ class PlayerPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               IconButton(
-                onPressed: () {},
-                icon: const Icon(
-                  Icons.shuffle_rounded,
-                  size: 20,
+                onPressed: () {
+                  AudioController.to.shuffle();
+                  loggerDebug(
+                      AudioController.to.isShuffleOn.value, 'shuffle value');
+                },
+                icon: Obx(
+                  () => Icon(
+                    Icons.shuffle_rounded,
+                    size: 20,
+                    color: AudioController.to.isShuffleOn.value
+                        ? Theme.of(context).primaryColor
+                        : null,
+                  ),
                 ),
               ),
               CustomCircularButton(

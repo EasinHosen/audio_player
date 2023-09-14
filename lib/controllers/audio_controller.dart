@@ -12,26 +12,25 @@ class AudioController extends GetxController {
   RxBool hasPermission = false.obs;
   RxBool songListLoading = false.obs;
   RxBool isPlaying = false.obs;
+  RxBool isShuffleOn = false.obs;
   RxString duration = '∞'.obs;
   RxString position = '0.00'.obs;
   RxDouble max = 0.0.obs;
   RxDouble current = 0.0.obs;
   RxInt currentIndex = 0.obs;
+  RxInt previousIndex = 0.obs;
 
-  final OnAudioQuery _audioQuery = OnAudioQuery();
-  final AudioPlayer _audioPlayer = AudioPlayer();
+  static final OnAudioQuery _audioQuery = OnAudioQuery();
+  static final AudioPlayer _audioPlayer = AudioPlayer();
 
   @override
   onInit() {
     checkAndReqPermission();
+    getLocalValues();
     super.onInit();
   }
 
-  @override
-  onClose() {
-    loggerDebug('controller closed');
-    super.onClose();
-  }
+  getLocalValues() async {}
 
   updatePosition() {
     _audioPlayer.durationStream.listen((d) {
@@ -50,6 +49,10 @@ class AudioController extends GetxController {
         playNext();
       }
     });
+    _audioPlayer.currentIndexStream.listen((ind) {
+      currentIndex.value = ind!;
+      nowPlaying.value = songList[currentIndex.value];
+    });
   }
 
   changeDurationToSeconds(seconds) {
@@ -60,34 +63,45 @@ class AudioController extends GetxController {
   getSongs() async {
     songListLoading(true);
     final audioList = await _audioQuery.querySongs(
-        /*orderType: OrderType.ASC_OR_SMALLER,
+      orderType: OrderType.ASC_OR_SMALLER,
       ignoreCase: true,
-      uriType: UriType.EXTERNAL,*/
-        );
+      uriType: UriType.EXTERNAL,
+    );
     songList.value = audioList;
     songListLoading(false);
     if (songList.isNotEmpty) {
-      nowPlaying.value = songList[currentIndex.value];
+      ///manual method
+      /*nowPlaying.value = songList[currentIndex.value];
       _audioPlayer
           .setAudioSource(AudioSource.uri(Uri.parse(nowPlaying.value!.uri!)));
-      updatePosition();
+      updatePosition();*/
+
+      ///auto method
+      readyPlayer();
     }
   }
 
-  playSelectedSong(String? uri) {
-    try {
-      /*loggerDebug(
-          songList[currentIndex.value].displayNameWOExt, 'current index song');*/
+  playSelectedSong(int index) {
+    ///old way
+    /*try {
+      loggerDebug(
+          songList[currentIndex.value].displayNameWOExt, 'current index song');
       _audioPlayer.setAudioSource(
         AudioSource.uri(Uri.parse(uri!)),
       );
+      _audioPlayer.skipSilenceEnabled;
       _audioPlayer.play();
       nowPlaying.value = songList[currentIndex.value];
       updatePosition();
       isPlaying(true);
     } catch (e) {
       loggerDebug(e, 'error on playSelectedSong');
-    }
+    }*/
+    ///new way
+    _audioPlayer.seek(Duration.zero, index: index);
+    _audioPlayer.play();
+    isPlaying(true);
+    // updatePosition();
   }
 
   void playAndPause() {
@@ -101,59 +115,88 @@ class AudioController extends GetxController {
   }
 
   void playNext() {
-    /*if (_audioPlayer.hasNext) {
+    ///old way
+    /*if (isShuffleOn.value) {
+      int rand;
+      rand = Random().nextInt(songList.length - 1);
+      while (currentIndex.value == rand) {
+        rand = Random().nextInt(songList.length - 1);
+        loggerDebug(rand, 'same value came up as current index');
+      }
+      currentIndex.value = rand;
+    } else {
+      if (currentIndex.value + 1 <= songList.length) {
+        currentIndex.value++;
+        // _audioPlayer.stop();
+        // loggerDebug(currentIndex.value, 'present index in playNext');
+      } else {
+        loggerDebug('Reached end');
+      }
+    }
+
+    final uri = songList[currentIndex.value].uri;
+    playSelectedSong(uri);*/
+
+    if (_audioPlayer.hasNext) {
       _audioPlayer.seekToNext();
     } else {
       loggerDebug('nothing to play next');
-    }*/
-    loggerDebug(currentIndex.value, 'last index in playNext');
-
-    if (currentIndex.value + 1 <= songList.length) {
-      currentIndex.value++;
-      // _audioPlayer.stop();
-      final uri = songList[currentIndex.value].uri;
-      loggerDebug(currentIndex.value, 'present index in playNext');
-      playSelectedSong(uri);
-    } else {
-      loggerDebug('Reached end');
     }
   }
 
   void playPrevious() {
-    /*if (_audioPlayer.hasPrevious) {
-      _audioPlayer.seekToPrevious();
-    } else {
-      loggerDebug('nothing to play');
-    }*/
-    if (currentIndex.value - 1 >= 0) {
+    /// old way
+    /*if (currentIndex.value - 1 >= 0) {
       currentIndex.value--;
       // _audioPlayer.stop();
       final uri = songList[currentIndex.value].uri;
       playSelectedSong(uri);
     } else {
       loggerDebug('Reached first');
+    }*/
+
+    /// new way
+    if (_audioPlayer.hasPrevious) {
+      _audioPlayer.seekToPrevious();
+    } else {
+      loggerDebug('nothing to play');
     }
   }
 
-  /*readySongs() async {
-    if (songList.isNotEmpty) {
+  readyPlayer() async {
+    ///old way
+    /*if (songList.isNotEmpty) {
       audioSourceList.clear();
       songList.map((e) {
         final path = e.data.toString();
         audioSourceList.add(AudioSource.uri(Uri.parse(path)));
       }).toList();
-      */ /*_audioPlayer.setAudioSource(ConcatenatingAudioSource(children: audioSourceList))
+       _audioPlayer.setAudioSource(ConcatenatingAudioSource(children: audioSourceList))
           .catchError((err) {
         loggerDebug(err, 'error on setAudioSource');
-      });*/ /*
+      });
       loggerDebug(songList[0].toString(), 'first song of songList');
       loggerDebug(
           audioSourceList[0].toString(), 'first song of audioSourceList');
     } else {
       loggerDebug('list empty', 'error on ready songs');
     }
-    loggerDebug(audioSourceList.length, 'AudioSource list length');
-  }*/
+    loggerDebug(audioSourceList.length, 'AudioSource list length');*/
+
+    ///new way
+    await _audioPlayer
+        .setAudioSource(
+            ConcatenatingAudioSource(
+                children: songList
+                    .map((e) => AudioSource.uri(Uri.parse(e.uri!)))
+                    .toList()),
+            initialIndex: currentIndex.value,
+            initialPosition: Duration.zero)
+        .catchError((err) {
+      loggerDebug(err, 'error on readyPlayer');
+    });
+    updatePosition();
+  }
 
   checkAndReqPermission({bool retry = false}) async {
     hasPermission(await _audioQuery.checkAndRequest(
@@ -164,5 +207,10 @@ class AudioController extends GetxController {
     } else {
       loggerDebug(hasPermission.value, 'Permission');
     }
+  }
+
+  void shuffle() async {
+    isShuffleOn.value = !isShuffleOn.value;
+    await _audioPlayer.setShuffleModeEnabled(isShuffleOn.value);
   }
 }
