@@ -60,6 +60,7 @@ class PlayerPage extends StatelessWidget {
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                 ),
+                textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -68,6 +69,9 @@ class PlayerPage extends StatelessWidget {
           Obx(
             () => Text(
               AudioController.to.nowPlaying.value?.artist ?? 'Artist',
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           Obx(

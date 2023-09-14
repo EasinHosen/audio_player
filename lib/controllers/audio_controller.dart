@@ -7,7 +7,7 @@ class AudioController extends GetxController {
   static AudioController get to => Get.find();
 
   RxList<SongModel> songList = <SongModel>[].obs;
-  RxList<AudioSource> audioSourceList = <AudioSource>[].obs;
+  // RxList<AudioSource> audioSourceList = <AudioSource>[].obs;
   Rx<SongModel?> nowPlaying = Rx<SongModel?>(null);
   RxBool hasPermission = false.obs;
   RxBool songListLoading = false.obs;
@@ -41,6 +41,14 @@ class AudioController extends GetxController {
     _audioPlayer.positionStream.listen((p) {
       position.value = p.toString().split('.')[0];
       current.value = p.inSeconds.toDouble();
+      /*if (position.value == duration.value) {
+        playNext();
+      }*/
+    });
+    _audioPlayer.processingStateStream.listen((event) {
+      if (event == ProcessingState.completed) {
+        playNext();
+      }
     });
   }
 
@@ -58,14 +66,18 @@ class AudioController extends GetxController {
         );
     songList.value = audioList;
     songListLoading(false);
-    // readySongs();
-    // loggerDebug(songList.length, 'number of audio');
+    if (songList.isNotEmpty) {
+      nowPlaying.value = songList[currentIndex.value];
+      _audioPlayer
+          .setAudioSource(AudioSource.uri(Uri.parse(nowPlaying.value!.uri!)));
+      updatePosition();
+    }
   }
 
   playSelectedSong(String? uri) {
     try {
-      loggerDebug(
-          songList[currentIndex.value].displayNameWOExt, 'current index song');
+      /*loggerDebug(
+          songList[currentIndex.value].displayNameWOExt, 'current index song');*/
       _audioPlayer.setAudioSource(
         AudioSource.uri(Uri.parse(uri!)),
       );
@@ -94,10 +106,13 @@ class AudioController extends GetxController {
     } else {
       loggerDebug('nothing to play next');
     }*/
+    loggerDebug(currentIndex.value, 'last index in playNext');
+
     if (currentIndex.value + 1 <= songList.length) {
       currentIndex.value++;
-      _audioPlayer.stop();
+      // _audioPlayer.stop();
       final uri = songList[currentIndex.value].uri;
+      loggerDebug(currentIndex.value, 'present index in playNext');
       playSelectedSong(uri);
     } else {
       loggerDebug('Reached end');
@@ -112,7 +127,7 @@ class AudioController extends GetxController {
     }*/
     if (currentIndex.value - 1 >= 0) {
       currentIndex.value--;
-      _audioPlayer.stop();
+      // _audioPlayer.stop();
       final uri = songList[currentIndex.value].uri;
       playSelectedSong(uri);
     } else {
