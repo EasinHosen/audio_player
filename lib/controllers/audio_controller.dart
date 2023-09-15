@@ -68,7 +68,7 @@ class AudioController extends GetxController {
     // loggerDebug(audioDuration, 'audio duration in update');
     if (audioDuration != null) {
       final String formattedDuration = formatDuration(audioDuration);
-      loggerDebug(formattedDuration, 'formatted duration in update');
+      // loggerDebug(formattedDuration, 'formatted duration in update');
 
       duration.value = formattedDuration;
       max.value = audioDuration.inSeconds.toDouble();
@@ -238,6 +238,7 @@ class AudioController extends GetxController {
             initialPosition: Duration.zero)
         .catchError((err) {
       loggerDebug(err, 'error on readyPlayer');
+      return err;
     });
     updatePosition();
   }
