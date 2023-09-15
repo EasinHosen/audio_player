@@ -34,12 +34,14 @@ class AudioController extends GetxController {
   getLocalValues() async {}
 
   updatePosition() {
-    _audioPlayer.durationStream.listen((d) {
-      duration.value = d.toString().split('.')[0];
-      max.value = d!.inSeconds.toDouble();
-    });
+    /*_audioPlayer.durationStream.listen((d) {
+      duration.value = d == null ? 'Buffering' : d.toString().split('.')[0];
+      d == null ? max.value = 0.0 : max.value = d.inSeconds.toDouble();
+    });*/
+    getDuration();
+
     _audioPlayer.positionStream.listen((p) {
-      position.value = p.toString().split('.')[0];
+      position.value = /*p.toString().split('.')[0]*/ formatDuration(p);
       current.value = p.inSeconds.toDouble();
       /*if (position.value == duration.value) {
         playNext();
@@ -59,6 +61,30 @@ class AudioController extends GetxController {
   changeDurationToSeconds(seconds) {
     var duration = Duration(seconds: seconds);
     _audioPlayer.seek(duration);
+  }
+
+  getDuration() {
+    final Duration? audioDuration = _audioPlayer.duration;
+    // loggerDebug(audioDuration, 'audio duration in update');
+    if (audioDuration != null) {
+      final String formattedDuration = formatDuration(audioDuration);
+      loggerDebug(formattedDuration, 'formatted duration in update');
+
+      duration.value = formattedDuration;
+      max.value = audioDuration.inSeconds.toDouble();
+    } else {
+      duration.value = 'Buffering';
+      max.value = 0.0;
+    }
+  }
+
+  String formatDuration(Duration duration) {
+    if (duration.inHours > 0) {
+      return duration.toString().split('.').first.padLeft(8, '0');
+    } else {
+      return duration.toString().substring(
+          2, 7); // Remove the leading "0:" for durations less than an hour
+    }
   }
 
   getSongs() async {
@@ -114,6 +140,7 @@ class AudioController extends GetxController {
     }*/
     ///new way
     _audioPlayer.seek(Duration.zero, index: index);
+    getDuration();
     _audioPlayer.play();
     isPlaying(true);
     // updatePosition();
@@ -154,6 +181,7 @@ class AudioController extends GetxController {
 
     if (_audioPlayer.hasNext) {
       _audioPlayer.seekToNext();
+      getDuration();
     } else {
       loggerDebug('nothing to play next');
     }
@@ -173,6 +201,7 @@ class AudioController extends GetxController {
     /// new way
     if (_audioPlayer.hasPrevious) {
       _audioPlayer.seekToPrevious();
+      getDuration();
     } else {
       loggerDebug('nothing to play');
     }
