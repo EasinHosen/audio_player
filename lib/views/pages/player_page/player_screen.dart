@@ -51,19 +51,24 @@ class PlayerPage extends StatelessWidget {
           const SizedBox(
             height: 4,
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Obx(
-              () => Text(
-                AudioController.to.nowPlaying.value?.displayNameWOExt ??
-                    'Music',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
+          GestureDetector(
+            onTap: () {
+              Get.toNamed(AudioListPage.routeName);
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Obx(
+                () => Text(
+                  AudioController.to.nowPlaying.value?.displayNameWOExt ??
+                      'Music',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),
