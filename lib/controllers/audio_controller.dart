@@ -34,6 +34,7 @@ class AudioController extends GetxController {
       checkAndReqPermission();
     } else {
       // loggerDebug(currentIndex.value, 'first time else block current index');
+      hasPermission(true);
       await getSongs();
     }
     syncLocalValues();
