@@ -24,14 +24,38 @@ class AudioController extends GetxController {
   static final OnAudioQuery _audioQuery = OnAudioQuery();
   static final AudioPlayer _audioPlayer = AudioPlayer();
 
+  bool get isFirstTime => getLocalData('isFirstTime') ?? true;
+
   @override
-  onInit() {
-    checkAndReqPermission();
-    getLocalValues();
+  onInit() async {
+    if (isFirstTime) {
+      // loggerDebug('', 'first time if block');
+      checkAndReqPermission();
+    } else {
+      // loggerDebug(currentIndex.value, 'first time else block current index');
+      await getSongs();
+    }
+    syncLocalValues();
+    // loggerDebug(currentIndex.value, 'after sync current index');
+
     super.onInit();
   }
 
-  getLocalValues() async {}
+  syncLocalValues() async {
+    currentIndex(getLocalData('lastIndex'));
+    // loggerDebug(lastIndex, 'inside sync last index');
+    nowPlaying.value = songList[currentIndex.value];
+    isShuffleOn.value = getLocalData('isShuffleTurnedOn');
+    loopMode.value = getLocalData('loopMode') == null
+        ? LoopMode.off
+        : LoopMode.values.firstWhere(
+            (element) => element.toString() == getLocalData('loopMode'));
+    await _audioPlayer.setShuffleModeEnabled(isShuffleOn.value);
+    await _audioPlayer.setLoopMode(loopMode.value);
+    // loggerDebug(lastIndex, 'last index local');
+    // loggerDebug(getLocalData('isShuffleTurnedOn'), 'shuffle value local');
+    // loggerDebug(getLocalData('loopMode'), 'loop mode local');
+  }
 
   updatePosition() {
     /*_audioPlayer.durationStream.listen((d) {
@@ -52,10 +76,12 @@ class AudioController extends GetxController {
         playNext();
       }
     });
-    _audioPlayer.currentIndexStream.listen((ind) {
+    /*_audioPlayer.currentIndexStream.listen((ind) {
       currentIndex.value = ind!;
+      // setLocalData('lastIndex', ind);
+      loggerDebug(getLocalData('lastIndex'), 'last index local');
       nowPlaying.value = songList[currentIndex.value];
-    });
+    });*/
   }
 
   changeDurationToSeconds(seconds) {
@@ -76,6 +102,15 @@ class AudioController extends GetxController {
       duration.value = 'Buffering';
       max.value = 0.0;
     }
+  }
+
+  listenToIndex() {
+    _audioPlayer.currentIndexStream.listen((ind) {
+      currentIndex.value = ind!;
+      setLocalData('lastIndex', ind);
+      // loggerDebug(getLocalData('lastIndex'), 'last index local');
+      nowPlaying.value = songList[currentIndex.value];
+    });
   }
 
   String formatDuration(Duration duration) {
@@ -105,7 +140,7 @@ class AudioController extends GetxController {
       updatePosition();*/
 
       ///auto method
-      readyPlayer();
+      await readyPlayer();
     }
   }
 
@@ -182,6 +217,7 @@ class AudioController extends GetxController {
     if (_audioPlayer.hasNext) {
       _audioPlayer.seekToNext();
       getDuration();
+      listenToIndex();
     } else {
       loggerDebug('nothing to play next');
     }
@@ -202,6 +238,7 @@ class AudioController extends GetxController {
     if (_audioPlayer.hasPrevious) {
       _audioPlayer.seekToPrevious();
       getDuration();
+      listenToIndex();
     } else {
       loggerDebug('nothing to play');
     }
@@ -249,6 +286,7 @@ class AudioController extends GetxController {
     ));
     if (hasPermission.value) {
       getSongs();
+      setLocalData('isFirstTime', false);
     } else {
       loggerDebug(hasPermission.value, 'Permission');
     }
@@ -257,6 +295,7 @@ class AudioController extends GetxController {
   void shuffle() async {
     isShuffleOn.value = !isShuffleOn.value;
     await _audioPlayer.setShuffleModeEnabled(isShuffleOn.value);
+    await setLocalData('isShuffleTurnedOn', isShuffleOn.value);
   }
 
   void toggleLoopMode() async {
@@ -272,6 +311,9 @@ class AudioController extends GetxController {
         break;
     }
 
+    setLocalData('loopMode', loopMode.value.toString());
     await _audioPlayer.setLoopMode(loopMode.value);
+    // loggerDebug(loopMode.value, 'loop mode controller value set');
+    // loggerDebug(getLocalData('loopMode'), 'loop mode local');
   }
 }

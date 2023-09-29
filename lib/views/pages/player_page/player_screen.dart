@@ -1,4 +1,3 @@
-import 'package:audio_player/utils/global_helpers.dart';
 import 'package:audio_player/views/pages/audio_list_page/audio_list_screen.dart';
 import 'package:audio_player/views/shared_widgets/cusotm_circular_button.dart';
 import 'package:flutter/material.dart';
@@ -106,8 +105,8 @@ class PlayerPage extends StatelessWidget {
               IconButton(
                 onPressed: () {
                   AudioController.to.shuffle();
-                  loggerDebug(
-                      AudioController.to.isShuffleOn.value, 'shuffle value');
+                  // loggerDebug(
+                  //     AudioController.to.isShuffleOn.value, 'shuffle value');
                 },
                 icon: Obx(
                   () => Icon(
