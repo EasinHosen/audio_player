@@ -5,12 +5,48 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 
-class AudioListPage extends StatelessWidget {
+class AudioListPage extends StatefulWidget {
   const AudioListPage({super.key});
   static const String routeName = '/audio_list_page';
 
   @override
+  State<AudioListPage> createState() => _AudioListPageState();
+}
+
+class _AudioListPageState extends State<AudioListPage>
+    with AutomaticKeepAliveClientMixin {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToCurrentSong();
+    });
+    super.initState();
+  }
+
+  void _scrollToCurrentSong() {
+    final int currentIndex = AudioController.to.currentIndex.value;
+    if (_scrollController.hasClients && currentIndex >= 0) {
+      final double scrollOffset = currentIndex * Get.height * 0.06;
+
+      _scrollController.jumpTo(scrollOffset);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('All Songs'),
@@ -34,6 +70,7 @@ class AudioListPage extends StatelessWidget {
               AudioController.to.songList.isNotEmpty)
             Expanded(
               child: ListView.builder(
+                controller: _scrollController,
                 shrinkWrap: true,
                 primary: false,
                 itemCount: AudioController.to.songList.length,
