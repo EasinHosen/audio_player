@@ -1,4 +1,5 @@
 import 'package:audio_player/utils/global_helpers.dart';
+import 'package:audio_player/utils/toast.dart';
 import 'package:get/get.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:on_audio_query/on_audio_query.dart';
@@ -296,18 +297,24 @@ class AudioController extends GetxController {
     isShuffleOn.value = !isShuffleOn.value;
     await _audioPlayer.setShuffleModeEnabled(isShuffleOn.value);
     await setLocalData('isShuffleTurnedOn', isShuffleOn.value);
+    isShuffleOn.value == true
+        ? ToastManager.show('Shuffle On')
+        : ToastManager.show('Shuffle Off');
   }
 
   void toggleLoopMode() async {
     switch (loopMode.value) {
       case LoopMode.off:
         loopMode.value = LoopMode.all;
+        ToastManager.show('Repeat: All');
         break;
       case LoopMode.all:
         loopMode.value = LoopMode.one;
+        ToastManager.show('Repeat: One');
         break;
       case LoopMode.one:
         loopMode.value = LoopMode.off;
+        ToastManager.show('Repeat: Off');
         break;
     }
 

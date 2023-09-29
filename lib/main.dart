@@ -1,3 +1,4 @@
+import 'package:audio_player/utils/global_helpers.dart';
 import 'package:audio_player/utils/routes/app_routes.dart';
 import 'package:audio_player/views/pages/player_page/player_screen.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +26,8 @@ class MyApp extends StatelessWidget {
       // home: const MyHomePage(title: 'Flutter Demo Home Page'),
       getPages: AppRoutes.routes(),
       initialRoute: PlayerPage.routeName,
+      navigatorKey: navigatorKey,
+      scaffoldMessengerKey: scaffoldMessengerKey,
     );
   }
 }
