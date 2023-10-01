@@ -39,6 +39,16 @@ class AudioController extends GetxController {
     }
     syncLocalValues();
     // loggerDebug(currentIndex.value, 'after sync current index');
+    if (songList.isNotEmpty) {
+      ///manual method
+      /*nowPlaying.value = songList[currentIndex.value];
+      _audioPlayer
+          .setAudioSource(AudioSource.uri(Uri.parse(nowPlaying.value!.uri!)));
+      updatePosition();*/
+
+      ///auto method
+      await readyPlayer();
+    }
 
     super.onInit();
   }
@@ -134,16 +144,16 @@ class AudioController extends GetxController {
     final filteredList = filterAudioList(audioList);
     songList.value = filteredList;
     songListLoading(false);
-    if (songList.isNotEmpty) {
+    /*if (songList.isNotEmpty) {
       ///manual method
-      /*nowPlaying.value = songList[currentIndex.value];
+      */ /*nowPlaying.value = songList[currentIndex.value];
       _audioPlayer
           .setAudioSource(AudioSource.uri(Uri.parse(nowPlaying.value!.uri!)));
-      updatePosition();*/
+      updatePosition();*/ /*
 
       ///auto method
       await readyPlayer();
-    }
+    }*/
   }
 
   List<SongModel> filterAudioList(List<SongModel> audioList) {
@@ -267,6 +277,7 @@ class AudioController extends GetxController {
     loggerDebug(audioSourceList.length, 'AudioSource list length');*/
 
     ///new way
+    loggerDebug(currentIndex.value, 'current index in ready player');
     await _audioPlayer
         .setAudioSource(
             ConcatenatingAudioSource(
