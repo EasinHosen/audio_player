@@ -102,7 +102,7 @@ class AudioController extends GetxController {
   }
 
   getDuration() {
-    final Duration? audioDuration = _audioPlayer.duration;
+    /*final Duration? audioDuration = _audioPlayer.duration;
     // loggerDebug(audioDuration, 'audio duration in update');
     if (audioDuration != null) {
       final String formattedDuration = formatDuration(audioDuration);
@@ -113,17 +113,32 @@ class AudioController extends GetxController {
     } else {
       duration.value = 'Buffering';
       max.value = 0.0;
-    }
+    }*/
+
+    final Duration audioDuration =
+        Duration(milliseconds: nowPlaying.value!.duration!);
+    // loggerDebug(audioDuration, 'audio duration in update');
+
+    final String formattedDuration = formatDuration(audioDuration);
+    duration.value = formattedDuration;
+    max.value = audioDuration.inSeconds.toDouble();
   }
 
-  listenToIndex() {
-    _audioPlayer.currentIndexStream.listen((ind) {
-      currentIndex.value = ind!;
-      setLocalData('lastIndex', ind);
-      // loggerDebug(getLocalData('lastIndex'), 'last index local');
-      nowPlaying.value = songList[currentIndex.value];
-    });
-  }
+  // listenToIndex() {
+  //   currentIndex.value = _audioPlayer.currentIndex!;
+  //   setLocalData('lastIndex', _audioPlayer.currentIndex!);
+  //   nowPlaying.value = songList[_audioPlayer.currentIndex!];
+  //   /*_audioPlayer.currentIndexStream.listen((ind) {
+  //     // currentIndex.value = ind!;
+  //     // setLocalData('lastIndex', ind);
+  //     // loggerDebug(getLocalData('lastIndex'), 'last index local');
+  //     loggerDebug(ind, 'current index listen stream');
+  //   });*/
+  //   // loggerDebug(_audioPlayer.currentIndex!, 'current index of audio player');
+  //
+  //   // nowPlaying.value = songList[currentIndex.value];
+  //   // loggerDebug(currentIndex.value, 'current index of controller');
+  // }
 
   String formatDuration(Duration duration) {
     if (duration.inHours > 0) {
@@ -187,6 +202,9 @@ class AudioController extends GetxController {
     }*/
     ///new way
     _audioPlayer.seek(Duration.zero, index: index);
+    currentIndex(index);
+    setLocalData('lastIndex', index);
+    nowPlaying.value = songList[currentIndex.value];
     getDuration();
     _audioPlayer.play();
     isPlaying(true);
@@ -227,11 +245,16 @@ class AudioController extends GetxController {
     playSelectedSong(uri);*/
 
     if (_audioPlayer.hasNext) {
+      currentIndex.value = _audioPlayer.nextIndex!;
+      setLocalData('lastIndex', _audioPlayer.nextIndex!);
+      nowPlaying.value = songList[_audioPlayer.nextIndex!];
       _audioPlayer.seekToNext();
+      // loggerDebug(currentIndex.value, 'current index of controller');
       getDuration();
-      listenToIndex();
     } else {
-      loggerDebug('nothing to play next');
+      ToastManager.show('Reached the end of list');
+      _audioPlayer.stop();
+      // loggerDebug('nothing to play next');
     }
   }
 
@@ -248,11 +271,14 @@ class AudioController extends GetxController {
 
     /// new way
     if (_audioPlayer.hasPrevious) {
+      currentIndex.value = _audioPlayer.previousIndex!;
+      setLocalData('lastIndex', _audioPlayer.previousIndex!);
+      nowPlaying.value = songList[_audioPlayer.previousIndex!];
       _audioPlayer.seekToPrevious();
       getDuration();
-      listenToIndex();
     } else {
-      loggerDebug('nothing to play');
+      ToastManager.show('Reached start index');
+      // loggerDebug('nothing to play');
     }
   }
 
@@ -277,7 +303,7 @@ class AudioController extends GetxController {
     loggerDebug(audioSourceList.length, 'AudioSource list length');*/
 
     ///new way
-    loggerDebug(currentIndex.value, 'current index in ready player');
+    // loggerDebug(currentIndex.value, 'current index in ready player');
     await _audioPlayer
         .setAudioSource(
             ConcatenatingAudioSource(

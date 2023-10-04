@@ -1,5 +1,4 @@
 import 'package:audio_player/controllers/audio_controller.dart';
-import 'package:audio_player/utils/global_helpers.dart';
 import 'package:audio_player/views/pages/audio_list_page/widgets/permission_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -109,8 +108,8 @@ class _AudioListPageState extends State<AudioListPage>
                             )
                           : null,
                       onTap: () {
-                        loggerDebug(audio, 'song model');
-                        loggerDebug(index, 'index');
+                        // loggerDebug(audio, 'song model');
+                        // loggerDebug(index, 'index');
                         AudioController.to.currentIndex.value = index;
                         AudioController.to.playSelectedSong(index);
                       },
