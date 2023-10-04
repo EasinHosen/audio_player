@@ -110,7 +110,7 @@ class _AudioListPageState extends State<AudioListPage>
                       onTap: () {
                         // loggerDebug(audio, 'song model');
                         // loggerDebug(index, 'index');
-                        AudioController.to.currentIndex.value = index;
+                        // AudioController.to.currentIndex.value = index;
                         AudioController.to.playSelectedSong(index);
                       },
                     ),

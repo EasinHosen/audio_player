@@ -201,10 +201,10 @@ class AudioController extends GetxController {
       loggerDebug(e, 'error on playSelectedSong');
     }*/
     ///new way
-    _audioPlayer.seek(Duration.zero, index: index);
     currentIndex(index);
     setLocalData('lastIndex', index);
     nowPlaying.value = songList[currentIndex.value];
+    _audioPlayer.seek(Duration.zero, index: index);
     getDuration();
     _audioPlayer.play();
     isPlaying(true);
