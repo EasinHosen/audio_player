@@ -70,6 +70,7 @@ class AudioController extends GetxController {
   }
 
   updatePosition() {
+    bool isPlayingNext = false;
     /*_audioPlayer.durationStream.listen((d) {
       duration.value = d == null ? 'Buffering' : d.toString().split('.')[0];
       d == null ? max.value = 0.0 : max.value = d.inSeconds.toDouble();
@@ -85,9 +86,37 @@ class AudioController extends GetxController {
     });
     _audioPlayer.processingStateStream.listen((event) {
       if (event == ProcessingState.completed) {
-        playNext();
+        if (!isPlayingNext) {
+          isPlayingNext = true;
+          playNext();
+          // loggerDebug(event, 'song process state');
+        }
+      } else {
+        isPlayingNext = false;
       }
     });
+    /*_audioPlayer.processingStateStream.listen((event) {
+      switch (event) {
+        case ProcessingState.completed:
+          playNext();
+          loggerDebug(event, 'song process state');
+          break;
+        case ProcessingState.idle:
+          break;
+        case ProcessingState.loading:
+          break;
+        case ProcessingState.buffering:
+          break;
+        case ProcessingState.ready:
+          break;
+      }
+      */
+    /*if (event == ProcessingState.completed) {
+        playNext();
+        loggerDebug(event, 'song process state');
+      }*/
+    /*
+    });*/
     /*_audioPlayer.currentIndexStream.listen((ind) {
       currentIndex.value = ind!;
       // setLocalData('lastIndex', ind);
@@ -184,7 +213,7 @@ class AudioController extends GetxController {
     }).toList();
   }
 
-  playSelectedSong(int index) {
+  playSelectedSong(int index) async {
     ///old way
     /*try {
       loggerDebug(
@@ -204,24 +233,24 @@ class AudioController extends GetxController {
     currentIndex(index);
     setLocalData('lastIndex', index);
     nowPlaying.value = songList[currentIndex.value];
-    _audioPlayer.seek(Duration.zero, index: index);
     getDuration();
-    _audioPlayer.play();
     isPlaying(true);
+    await _audioPlayer.seek(Duration.zero, index: index);
+    await _audioPlayer.play();
     // updatePosition();
   }
 
-  void playAndPause() {
+  void playAndPause() async {
     if (isPlaying.value) {
-      _audioPlayer.pause();
       isPlaying(false);
+      await _audioPlayer.pause();
     } else {
-      _audioPlayer.play();
       isPlaying(true);
+      await _audioPlayer.play();
     }
   }
 
-  void playNext() {
+  void playNext() async {
     ///old way
     /*if (isShuffleOn.value) {
       int rand;
@@ -248,17 +277,19 @@ class AudioController extends GetxController {
       currentIndex.value = _audioPlayer.nextIndex!;
       setLocalData('lastIndex', _audioPlayer.nextIndex!);
       nowPlaying.value = songList[_audioPlayer.nextIndex!];
-      _audioPlayer.seekToNext();
-      // loggerDebug(currentIndex.value, 'current index of controller');
       getDuration();
+      await _audioPlayer.seekToNext();
+      // loggerDebug(currentIndex.value, 'current index of controller');
     } else {
       ToastManager.show('Reached the end of list');
-      _audioPlayer.stop();
+      isPlaying(false);
+      await _audioPlayer.seek(Duration.zero);
+      await _audioPlayer.stop();
       // loggerDebug('nothing to play next');
     }
   }
 
-  void playPrevious() {
+  void playPrevious() async {
     /// old way
     /*if (currentIndex.value - 1 >= 0) {
       currentIndex.value--;
@@ -274,7 +305,7 @@ class AudioController extends GetxController {
       currentIndex.value = _audioPlayer.previousIndex!;
       setLocalData('lastIndex', _audioPlayer.previousIndex!);
       nowPlaying.value = songList[_audioPlayer.previousIndex!];
-      _audioPlayer.seekToPrevious();
+      await _audioPlayer.seekToPrevious();
       getDuration();
     } else {
       ToastManager.show('Reached start index');

@@ -87,7 +87,7 @@ class PlayerPage extends StatelessWidget {
               value: AudioController.to.current.value,
               onChanged: (val) {
                 AudioController.to.changeDurationToSeconds(val.toInt());
-                val = val;
+                // val = val;
               },
             ),
           ),
