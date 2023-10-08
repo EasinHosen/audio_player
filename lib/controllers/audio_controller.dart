@@ -3,6 +3,7 @@ import 'package:audio_player/utils/toast.dart';
 import 'package:get/get.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:on_audio_query/on_audio_query.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class AudioController extends GetxController {
   static AudioController get to => Get.find();
@@ -30,206 +31,59 @@ class AudioController extends GetxController {
   @override
   onInit() async {
     if (isFirstTime) {
-      // loggerDebug('', 'first time if block');
-      checkAndReqPermission();
+      await checkAndReqPermission();
     } else {
-      // loggerDebug(currentIndex.value, 'first time else block current index');
       hasPermission(true);
       await getSongs();
     }
-    syncLocalValues();
-    // loggerDebug(currentIndex.value, 'after sync current index');
+    print('before sync val init');
     if (songList.isNotEmpty) {
-      ///manual method
-      /*nowPlaying.value = songList[currentIndex.value];
-      _audioPlayer
-          .setAudioSource(AudioSource.uri(Uri.parse(nowPlaying.value!.uri!)));
-      updatePosition();*/
-
-      ///auto method
+      await syncLocalValues();
       await readyPlayer();
     }
 
     super.onInit();
   }
 
+  ///player and query related methods
   syncLocalValues() async {
-    currentIndex(getLocalData('lastIndex'));
-    // loggerDebug(lastIndex, 'inside sync last index');
+    currentIndex.value = getLocalData('lastIndex') ?? 0;
     nowPlaying.value = songList[currentIndex.value];
-    isShuffleOn.value = getLocalData('isShuffleTurnedOn');
+    isShuffleOn.value = getLocalData('isShuffleTurnedOn') ?? false;
     loopMode.value = getLocalData('loopMode') == null
         ? LoopMode.off
         : LoopMode.values.firstWhere(
             (element) => element.toString() == getLocalData('loopMode'));
     await _audioPlayer.setShuffleModeEnabled(isShuffleOn.value);
     await _audioPlayer.setLoopMode(loopMode.value);
-    // loggerDebug(lastIndex, 'last index local');
-    // loggerDebug(getLocalData('isShuffleTurnedOn'), 'shuffle value local');
-    // loggerDebug(getLocalData('loopMode'), 'loop mode local');
   }
 
   updatePosition() {
     bool isPlayingNext = false;
-    /*_audioPlayer.durationStream.listen((d) {
-      duration.value = d == null ? 'Buffering' : d.toString().split('.')[0];
-      d == null ? max.value = 0.0 : max.value = d.inSeconds.toDouble();
-    });*/
     getDuration();
 
     _audioPlayer.positionStream.listen((p) {
-      position.value = /*p.toString().split('.')[0]*/ formatDuration(p);
+      position.value = formatDuration(p);
       current.value = p.inSeconds.toDouble();
-      /*if (position.value == duration.value) {
-        playNext();
-      }*/
     });
+    print('updatePosition methode');
+
     _audioPlayer.processingStateStream.listen((event) {
       if (event == ProcessingState.completed) {
+        print('process state complete block');
+
         if (!isPlayingNext) {
           isPlayingNext = true;
+          print('before play next');
           playNext();
-          // loggerDebug(event, 'song process state');
         }
       } else {
         isPlayingNext = false;
       }
     });
-    /*_audioPlayer.processingStateStream.listen((event) {
-      switch (event) {
-        case ProcessingState.completed:
-          playNext();
-          loggerDebug(event, 'song process state');
-          break;
-        case ProcessingState.idle:
-          break;
-        case ProcessingState.loading:
-          break;
-        case ProcessingState.buffering:
-          break;
-        case ProcessingState.ready:
-          break;
-      }
-      */
-    /*if (event == ProcessingState.completed) {
-        playNext();
-        loggerDebug(event, 'song process state');
-      }*/
-    /*
-    });*/
-    /*_audioPlayer.currentIndexStream.listen((ind) {
-      currentIndex.value = ind!;
-      // setLocalData('lastIndex', ind);
-      loggerDebug(getLocalData('lastIndex'), 'last index local');
-      nowPlaying.value = songList[currentIndex.value];
-    });*/
-  }
-
-  changeDurationToSeconds(seconds) {
-    var duration = Duration(seconds: seconds);
-    _audioPlayer.seek(duration);
-  }
-
-  getDuration() {
-    /*final Duration? audioDuration = _audioPlayer.duration;
-    // loggerDebug(audioDuration, 'audio duration in update');
-    if (audioDuration != null) {
-      final String formattedDuration = formatDuration(audioDuration);
-      // loggerDebug(formattedDuration, 'formatted duration in update');
-
-      duration.value = formattedDuration;
-      max.value = audioDuration.inSeconds.toDouble();
-    } else {
-      duration.value = 'Buffering';
-      max.value = 0.0;
-    }*/
-
-    final Duration audioDuration =
-        Duration(milliseconds: nowPlaying.value!.duration!);
-    // loggerDebug(audioDuration, 'audio duration in update');
-
-    final String formattedDuration = formatDuration(audioDuration);
-    duration.value = formattedDuration;
-    max.value = audioDuration.inSeconds.toDouble();
-  }
-
-  // listenToIndex() {
-  //   currentIndex.value = _audioPlayer.currentIndex!;
-  //   setLocalData('lastIndex', _audioPlayer.currentIndex!);
-  //   nowPlaying.value = songList[_audioPlayer.currentIndex!];
-  //   /*_audioPlayer.currentIndexStream.listen((ind) {
-  //     // currentIndex.value = ind!;
-  //     // setLocalData('lastIndex', ind);
-  //     // loggerDebug(getLocalData('lastIndex'), 'last index local');
-  //     loggerDebug(ind, 'current index listen stream');
-  //   });*/
-  //   // loggerDebug(_audioPlayer.currentIndex!, 'current index of audio player');
-  //
-  //   // nowPlaying.value = songList[currentIndex.value];
-  //   // loggerDebug(currentIndex.value, 'current index of controller');
-  // }
-
-  String formatDuration(Duration duration) {
-    if (duration.inHours > 0) {
-      return duration.toString().split('.').first.padLeft(8, '0');
-    } else {
-      return duration.toString().substring(
-          2, 7); // Remove the leading "0:" for durations less than an hour
-    }
-  }
-
-  getSongs() async {
-    songListLoading(true);
-    final audioList = await _audioQuery.querySongs(
-      orderType: OrderType.ASC_OR_SMALLER,
-      ignoreCase: true,
-      uriType: UriType.EXTERNAL,
-    );
-    final filteredList = filterAudioList(audioList);
-    songList.value = filteredList;
-    songListLoading(false);
-    /*if (songList.isNotEmpty) {
-      ///manual method
-      */ /*nowPlaying.value = songList[currentIndex.value];
-      _audioPlayer
-          .setAudioSource(AudioSource.uri(Uri.parse(nowPlaying.value!.uri!)));
-      updatePosition();*/ /*
-
-      ///auto method
-      await readyPlayer();
-    }*/
-  }
-
-  List<SongModel> filterAudioList(List<SongModel> audioList) {
-    // Define your filter criteria here.
-    const minDurationInSeconds = 60; // Minimum duration in seconds
-    const minFileSizeInBytes = 2 * 1024 * 1024; // Minimum file size in bytes
-
-    return audioList.where((audio) {
-      // Check if the audio file meets your filter criteria.
-      final durationInSeconds = audio.duration! ~/ 1000; // Convert to seconds
-      return durationInSeconds >= minDurationInSeconds &&
-          audio.size >= minFileSizeInBytes;
-    }).toList();
   }
 
   playSelectedSong(int index) async {
-    ///old way
-    /*try {
-      loggerDebug(
-          songList[currentIndex.value].displayNameWOExt, 'current index song');
-      _audioPlayer.setAudioSource(
-        AudioSource.uri(Uri.parse(uri!)),
-      );
-      _audioPlayer.skipSilenceEnabled;
-      _audioPlayer.play();
-      nowPlaying.value = songList[currentIndex.value];
-      updatePosition();
-      isPlaying(true);
-    } catch (e) {
-      loggerDebug(e, 'error on playSelectedSong');
-    }*/
-    ///new way
     currentIndex(index);
     setLocalData('lastIndex', index);
     nowPlaying.value = songList[currentIndex.value];
@@ -237,7 +91,6 @@ class AudioController extends GetxController {
     isPlaying(true);
     await _audioPlayer.seek(Duration.zero, index: index);
     await _audioPlayer.play();
-    // updatePosition();
   }
 
   void playAndPause() async {
@@ -251,62 +104,28 @@ class AudioController extends GetxController {
   }
 
   void playNext() async {
-    ///old way
-    /*if (isShuffleOn.value) {
-      int rand;
-      rand = Random().nextInt(songList.length - 1);
-      while (currentIndex.value == rand) {
-        rand = Random().nextInt(songList.length - 1);
-        loggerDebug(rand, 'same value came up as current index');
-      }
-      currentIndex.value = rand;
-    } else {
-      if (currentIndex.value + 1 <= songList.length) {
-        currentIndex.value++;
-        // _audioPlayer.stop();
-        // loggerDebug(currentIndex.value, 'present index in playNext');
-      } else {
-        loggerDebug('Reached end');
-      }
-    }
-
-    final uri = songList[currentIndex.value].uri;
-    playSelectedSong(uri);*/
-
     if (_audioPlayer.hasNext) {
       currentIndex.value = _audioPlayer.nextIndex!;
       setLocalData('lastIndex', _audioPlayer.nextIndex!);
       nowPlaying.value = songList[_audioPlayer.nextIndex!];
+      loggerDebug(nowPlaying.value!.displayName, 'now playing');
       getDuration();
       await _audioPlayer.seekToNext();
-      // loggerDebug(currentIndex.value, 'current index of controller');
     } else {
       ToastManager.show('Reached the end of list');
       isPlaying(false);
       await _audioPlayer.seek(Duration.zero);
       await _audioPlayer.stop();
-      // loggerDebug('nothing to play next');
     }
   }
 
   void playPrevious() async {
-    /// old way
-    /*if (currentIndex.value - 1 >= 0) {
-      currentIndex.value--;
-      // _audioPlayer.stop();
-      final uri = songList[currentIndex.value].uri;
-      playSelectedSong(uri);
-    } else {
-      loggerDebug('Reached first');
-    }*/
-
-    /// new way
     if (_audioPlayer.hasPrevious) {
       currentIndex.value = _audioPlayer.previousIndex!;
       setLocalData('lastIndex', _audioPlayer.previousIndex!);
       nowPlaying.value = songList[_audioPlayer.previousIndex!];
-      await _audioPlayer.seekToPrevious();
       getDuration();
+      await _audioPlayer.seekToPrevious();
     } else {
       ToastManager.show('Reached start index');
       // loggerDebug('nothing to play');
@@ -314,27 +133,7 @@ class AudioController extends GetxController {
   }
 
   readyPlayer() async {
-    ///old way
-    /*if (songList.isNotEmpty) {
-      audioSourceList.clear();
-      songList.map((e) {
-        final path = e.data.toString();
-        audioSourceList.add(AudioSource.uri(Uri.parse(path)));
-      }).toList();
-       _audioPlayer.setAudioSource(ConcatenatingAudioSource(children: audioSourceList))
-          .catchError((err) {
-        loggerDebug(err, 'error on setAudioSource');
-      });
-      loggerDebug(songList[0].toString(), 'first song of songList');
-      loggerDebug(
-          audioSourceList[0].toString(), 'first song of audioSourceList');
-    } else {
-      loggerDebug('list empty', 'error on ready songs');
-    }
-    loggerDebug(audioSourceList.length, 'AudioSource list length');*/
-
-    ///new way
-    // loggerDebug(currentIndex.value, 'current index in ready player');
+    print('getting player ready');
     await _audioPlayer
         .setAudioSource(
             ConcatenatingAudioSource(
@@ -348,18 +147,6 @@ class AudioController extends GetxController {
       return err;
     });
     updatePosition();
-  }
-
-  checkAndReqPermission({bool retry = false}) async {
-    hasPermission(await _audioQuery.checkAndRequest(
-      retryRequest: retry,
-    ));
-    if (hasPermission.value) {
-      getSongs();
-      setLocalData('isFirstTime', false);
-    } else {
-      loggerDebug(hasPermission.value, 'Permission');
-    }
   }
 
   void shuffle() async {
@@ -389,7 +176,67 @@ class AudioController extends GetxController {
 
     setLocalData('loopMode', loopMode.value.toString());
     await _audioPlayer.setLoopMode(loopMode.value);
-    // loggerDebug(loopMode.value, 'loop mode controller value set');
-    // loggerDebug(getLocalData('loopMode'), 'loop mode local');
+  }
+
+  changeDurationToSeconds(seconds) {
+    var duration = Duration(seconds: seconds);
+    _audioPlayer.seek(duration);
+  }
+
+  getDuration() {
+    final Duration audioDuration =
+        Duration(milliseconds: nowPlaying.value!.duration!);
+
+    final String formattedDuration = formatDuration(audioDuration);
+    duration.value = formattedDuration;
+    max.value = audioDuration.inSeconds.toDouble();
+  }
+
+  getSongs() async {
+    songListLoading(true);
+    final audioList = await _audioQuery.querySongs(
+      orderType: OrderType.ASC_OR_SMALLER,
+      ignoreCase: true,
+      uriType: UriType.EXTERNAL,
+    );
+    final filteredList = filterAudioList(audioList);
+    songList.value = filteredList;
+    songListLoading(false);
+  }
+
+  ///helper methods
+  String formatDuration(Duration duration) {
+    if (duration.inHours > 0) {
+      return duration.toString().split('.').first.padLeft(8, '0');
+    } else {
+      return duration.toString().substring(
+          2, 7); // Remove the leading "0:" for durations less than an hour
+    }
+  }
+
+  List<SongModel> filterAudioList(List<SongModel> audioList) {
+    // Define your filter criteria here.
+    const minDurationInSeconds = 60; // Minimum duration in seconds
+    const minFileSizeInBytes = 2 * 1024 * 1024; // Minimum file size in bytes
+
+    return audioList.where((audio) {
+      // Check if the audio file meets your filter criteria.
+      final durationInSeconds = audio.duration! ~/ 1000; // Convert to seconds
+      return durationInSeconds >= minDurationInSeconds &&
+          audio.size >= minFileSizeInBytes;
+    }).toList();
+  }
+
+  ///Permission related methods
+  checkAndReqPermission({bool retry = false}) async {
+    final permissionStatus = await Permission.storage.request();
+
+    if (permissionStatus.isGranted) {
+      hasPermission(true);
+      await getSongs();
+      setLocalData('isFirstTime', false);
+    } else {
+      ToastManager.show('Permission is not granted!');
+    }
   }
 }
