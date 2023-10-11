@@ -36,12 +36,10 @@ class AudioController extends GetxController {
       hasPermission(true);
       await getSongs();
     }
-    print('before sync val init');
     if (songList.isNotEmpty) {
       await syncLocalValues();
       await readyPlayer();
     }
-
     super.onInit();
   }
 
@@ -59,27 +57,27 @@ class AudioController extends GetxController {
   }
 
   updatePosition() {
-    bool isPlayingNext = false;
     getDuration();
 
     _audioPlayer.positionStream.listen((p) {
       position.value = formatDuration(p);
       current.value = p.inSeconds.toDouble();
+      // loggerDebug(p, 'position stream');
     });
-    print('updatePosition methode');
 
-    _audioPlayer.processingStateStream.listen((event) {
+    /*_audioPlayer.processingStateStream.listen((event) {
       if (event == ProcessingState.completed) {
-        print('process state complete block');
-
-        if (!isPlayingNext) {
-          isPlayingNext = true;
-          print('before play next');
-          playNext();
-        }
-      } else {
-        isPlayingNext = false;
+        loggerDebug(event, 'process state stream');
+        playNext();
       }
+    });*/
+    _audioPlayer.currentIndexStream.listen((event) {
+      if (event! != currentIndex.value) {
+        playNext();
+        currentIndex.value = event;
+        nowPlaying.value = songList[currentIndex.value];
+      }
+      loggerDebug(event, 'current index stream');
     });
   }
 
@@ -115,7 +113,7 @@ class AudioController extends GetxController {
       ToastManager.show('Reached the end of list');
       isPlaying(false);
       await _audioPlayer.seek(Duration.zero);
-      await _audioPlayer.stop();
+      // await _audioPlayer.stop();
     }
   }
 
@@ -133,10 +131,10 @@ class AudioController extends GetxController {
   }
 
   readyPlayer() async {
-    print('getting player ready');
     await _audioPlayer
         .setAudioSource(
             ConcatenatingAudioSource(
+                // useLazyPreparation: true,
                 children: songList
                     .map((e) => AudioSource.uri(Uri.parse(e.uri!)))
                     .toList()),
