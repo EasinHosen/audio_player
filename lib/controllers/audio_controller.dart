@@ -9,7 +9,7 @@ class AudioController extends GetxController {
   static AudioController get to => Get.find();
 
   RxList<SongModel> songList = <SongModel>[].obs;
-  // RxList<AudioSource> audioSourceList = <AudioSource>[].obs;
+  RxList<AudioSource> audioSourceList = <AudioSource>[].obs;
   Rx<SongModel?> nowPlaying = Rx<SongModel?>(null);
   Rx<LoopMode> loopMode = LoopMode.off.obs;
   RxBool hasPermission = false.obs;
@@ -57,35 +57,38 @@ class AudioController extends GetxController {
   }
 
   updatePosition() {
-    getDuration();
-
-    _audioPlayer.positionStream.listen((p) {
+    _audioPlayer.positionStream.listen((p) async {
       position.value = formatDuration(p);
       current.value = p.inSeconds.toDouble();
       // loggerDebug(p, 'position stream');
+      if (position.value == duration.value &&
+          currentIndex.value == songList.length - 1 &&
+          loopMode.value == LoopMode.off) {
+        ToastManager.show('Reached the end of list');
+        isPlaying(false);
+        await _audioPlayer.seek(Duration.zero);
+        await _audioPlayer.stop();
+      }
     });
 
-    /*_audioPlayer.processingStateStream.listen((event) {
-      if (event == ProcessingState.completed) {
-        loggerDebug(event, 'process state stream');
-        playNext();
+    _audioPlayer.durationStream.listen((event) {
+      if (event != null) {
+        duration.value = formatDuration(event);
+        max.value = event.inSeconds.toDouble();
       }
-    });*/
-    _audioPlayer.currentIndexStream.listen((event) {
+      // loggerDebug(event, 'duration stream');
+    });
+
+    _audioPlayer.currentIndexStream.listen((event) async {
       if (event! != currentIndex.value) {
-        playNext();
-        currentIndex.value = event;
-        nowPlaying.value = songList[currentIndex.value];
+        updateCurrent(event);
       }
-      loggerDebug(event, 'current index stream');
     });
   }
 
   playSelectedSong(int index) async {
-    currentIndex(index);
-    setLocalData('lastIndex', index);
-    nowPlaying.value = songList[currentIndex.value];
-    getDuration();
+    updateCurrent(index);
+
     isPlaying(true);
     await _audioPlayer.seek(Duration.zero, index: index);
     await _audioPlayer.play();
@@ -103,26 +106,26 @@ class AudioController extends GetxController {
 
   void playNext() async {
     if (_audioPlayer.hasNext) {
-      currentIndex.value = _audioPlayer.nextIndex!;
-      setLocalData('lastIndex', _audioPlayer.nextIndex!);
-      nowPlaying.value = songList[_audioPlayer.nextIndex!];
-      loggerDebug(nowPlaying.value!.displayName, 'now playing');
-      getDuration();
+      updateCurrent(_audioPlayer.nextIndex!);
+      // loggerDebug(nowPlaying.value!.displayName, 'now playing');
+      loggerDebug(audioSourceList[currentIndex.value].sequence,
+          'audio source value of current index');
+
       await _audioPlayer.seekToNext();
     } else {
       ToastManager.show('Reached the end of list');
-      isPlaying(false);
-      await _audioPlayer.seek(Duration.zero);
-      // await _audioPlayer.stop();
+      if (position.value == duration.value) {
+        isPlaying(false);
+        await _audioPlayer.seek(Duration.zero);
+        await _audioPlayer.stop();
+      }
     }
   }
 
   void playPrevious() async {
     if (_audioPlayer.hasPrevious) {
-      currentIndex.value = _audioPlayer.previousIndex!;
-      setLocalData('lastIndex', _audioPlayer.previousIndex!);
-      nowPlaying.value = songList[_audioPlayer.previousIndex!];
-      getDuration();
+      updateCurrent(_audioPlayer.previousIndex!);
+
       await _audioPlayer.seekToPrevious();
     } else {
       ToastManager.show('Reached start index');
@@ -134,10 +137,8 @@ class AudioController extends GetxController {
     await _audioPlayer
         .setAudioSource(
             ConcatenatingAudioSource(
-                // useLazyPreparation: true,
-                children: songList
-                    .map((e) => AudioSource.uri(Uri.parse(e.uri!)))
-                    .toList()),
+              children: audioSourceList,
+            ),
             initialIndex: currentIndex.value,
             initialPosition: Duration.zero)
         .catchError((err) {
@@ -181,17 +182,10 @@ class AudioController extends GetxController {
     _audioPlayer.seek(duration);
   }
 
-  getDuration() {
-    final Duration audioDuration =
-        Duration(milliseconds: nowPlaying.value!.duration!);
-
-    final String formattedDuration = formatDuration(audioDuration);
-    duration.value = formattedDuration;
-    max.value = audioDuration.inSeconds.toDouble();
-  }
-
   getSongs() async {
     songListLoading(true);
+    songList.clear();
+    audioSourceList.clear();
     final audioList = await _audioQuery.querySongs(
       orderType: OrderType.ASC_OR_SMALLER,
       ignoreCase: true,
@@ -199,6 +193,11 @@ class AudioController extends GetxController {
     );
     final filteredList = filterAudioList(audioList);
     songList.value = filteredList;
+    songList
+        .map((e) => audioSourceList.add(
+              AudioSource.uri(Uri.parse(e.uri!)),
+            ))
+        .toList();
     songListLoading(false);
   }
 
@@ -223,6 +222,12 @@ class AudioController extends GetxController {
       return durationInSeconds >= minDurationInSeconds &&
           audio.size >= minFileSizeInBytes;
     }).toList();
+  }
+
+  updateCurrent(int indexValue) {
+    currentIndex.value = indexValue;
+    setLocalData('lastIndex', currentIndex.value);
+    nowPlaying.value = songList[currentIndex.value];
   }
 
   ///Permission related methods
